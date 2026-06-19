@@ -31,25 +31,33 @@ def main():
     # Surrogate: ResNet-18 (Lighter, used for gradient generation)
     target_model = get_efficientnet_v2_s(pretrained=True)
     surrogate_model = get_resnet18(pretrained=True)
+    train_type = "labels"  # Surrogate training type (using teacher labels from target)
 
     # 3. Training / Loading Weights
+    n_epochs = args.epochs
     # Load or train target model (Standard training)
     if not load_model_weights(target_model, "clean", device=device):
         print("\nTraining Target Model...")
-        train_model(target_model, target_loader, val_loader, epochs=args.epochs, device=device)
+        train_model(
+            target_model,
+            target_loader,
+            val_loader,
+            epochs=n_epochs,
+            device=device,
+        )
     else:
-        print(f"\nLoaded Target Model: {target_model.name}_clean")
+        print(f"\nLoaded Target Model: {target_model.name}")
 
     # Load or train surrogate model (using teacher labels from target)
-    if not load_model_weights(surrogate_model, "labels", device=device):
+    if not load_model_weights(surrogate_model, train_type, device=device, target_model=target_model):
         print("\nTraining Surrogate Model with Teacher Labels...")
         train_model(
             surrogate_model, surrogate_loader, val_loader, 
-        epochs=args.epochs, device=device, 
-        teacher=target_model
-    )
+            epochs=n_epochs, device=device, 
+            teacher=target_model,
+        )
     else:
-        print(f"\nLoaded Surrogate Model: {surrogate_model.name}_labels")
+        print(f"\nLoaded Surrogate Model: {surrogate_model.name} trained with {train_type} from {target_model.name}")
 
     # 4. Evaluation
     print(f"\n--- Evaluating Gradient-based Adversarial Evasion Attacks (Epsilon={args.epsilon}) ---")
