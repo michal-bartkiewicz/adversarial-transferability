@@ -1,0 +1,105 @@
+# Instructions for Refactoring: Adversarial Transferability Framework on Tiny ImageNet-200
+
+Your task is to refactor the single-file script `black-box-attacks.py` into a clean, professional, and modular GitHub repository. The original script will be deleted after you successfully partition and rewrite its functionality.
+
+Follow the instructions below systematically.
+
+---
+
+## 1. Directory Structure
+
+Reorganize the repository into the following layout:
+
+├── data/ # Excluded from git (keep empty, download programmatically)
+├── weights/ # Directory to save model states (.pth files)
+├── models/
+│ ├── init.py
+│ ├── model_wrapper.py # Wrapper class with .name property and helper methods
+│ └── model_factory.py # Functions to load/initialize ResNet, MobileNet, etc.
+├── attacks/
+│ ├── init.py
+│ └── evasion_attacks.py # Refactored FGSM, PGD, and evaluation functions
+├── utils/
+│ ├── init.py
+│ ├── dataset_utils.py # Dataset download, validation, and preprocessing
+│ └── training_utils.py # Standard training and distillation logic
+├── main.py # Entry point to run experiments
+├── demo.ipynb # Jupyter notebook for evaluation and visualization
+├── README.md # Professional documentation of the repository
+└── requirements.txt # Required dependencies
+code Code
+
+---
+
+## 2. Dataset Setup & Image Normalization (`utils/dataset_utils.py`)
+
+1. **Automatic Download**: 
+   - If the directory `./data/tiny-imagenet-200/` is missing or empty, download the official dataset archive programmatically:
+     `http://cs231n.stanford.edu/tiny-imagenet-200.zip`
+   - Extract it into the `data/` directory.
+2. **Explicit Constants**:
+   - Define exact mean and standard deviation values for the RGB channels of Tiny ImageNet.
+   - You must use explicit constants for transformations:
+     - `RED_MEAN`, `GREEN_MEAN`, `BLUE_MEAN`
+     - `RED_STD`, `GREEN_STD`, `BLUE_STD`
+   - Use these constants to construct standard `transforms.Normalize` and its inverse transformation for plotting.
+
+---
+
+## 3. Model Wrappers & Weights Management (`models/`)
+
+1. **Wrapper Class**:
+   - Create a PyTorch `nn.Module` wrapper class or custom class that contains the underlying model.
+   - The wrapper must expose a `.name` property.
+   - The name must dynamically adapt based on:
+     - The architecture type (e.g., `resnet18`, `efficientnet_v2_s`).
+     - Whether it loaded pretrained weights (e.g., `_pretrained` or `_scratch`).
+2. **Standardized Saving Format**:
+   - All weights must be saved in the `weights/` directory.
+   - File naming pattern: `<model_name>_<training_type>.pth`
+     - `<model_name>`: Extracted from `<model>.name` (e.g., `resnet18_pretrained`).
+     - `<training_type>`: Must be one of `clean`, `labels` (for training using teacher's hard labels), or `logits` (for soft distillation using KL Divergence).
+
+---
+
+## 4. Attack Taxonomy & Implementation (`attacks/evasion_attacks.py`)
+
+1. **Nomenclature Update**:
+   - Update terms from "black box" to the more precise scientific taxonomy where appropriate: **Gradient-based Adversarial Evasion Attacks** and **Transferability-based Black-box Attacks**.
+   - Ensure variables, comments, and print outputs reflect this standard.
+2. **Function Decoupling**:
+   - Isolate FGSM and PGD implementations.
+   - Ensure input tensors are kept in appropriate bounds and device transfers are handled safely.
+
+---
+
+## 5. Jupyter Demo Notebook (`demo.ipynb`)
+
+1. Create a clean demonstration notebook.
+2. Run evaluations using varying perturbation budgets (epsilon values, e.g., `[0.0, 0.01, 0.03, 0.05, 0.1]`).
+3. Generate and display line plots comparing:
+   - Target model standard accuracy.
+   - White-box attack accuracy (FGSM and PGD directly against the target).
+   - Transfer-based (black-box) attack accuracy (FGSM and PGD generated using the surrogate model).
+4. Include a step showing sample visual comparisons of original vs. perturbed images with their predicted labels.
+
+---
+
+## 6. Code Style & Documentation
+
+1. **Type Hints**: Provide type annotations for all function and class signatures.
+2. **Docstrings**: Write complete, descriptive docstrings compatible with VSCode hover-documentation (e.g., Google Style or Sphinx format). Include:
+   - Brief description of function purpose.
+   - Parameters and their types.
+   - Returns and their types.
+3. **Hardware Agnostic**: Ensure the execution defaults to standard devices (`cuda`, `mps`, `xpu`, or `cpu`) based on current environment support.
+
+---
+
+## 7. README.md
+
+Generate a standard `README.md` file describing:
+- Repository structure.
+- Setup and installation instructions (including automatic dataset download).
+- How to run training and evaluation.
+- Brief summary of the evasion attack concepts utilized.
